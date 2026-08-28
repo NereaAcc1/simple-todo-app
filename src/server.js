@@ -34,6 +34,22 @@ function send(res, status, body) {
   res.end(payload);
 }
 
+/**
+ * Parse a todo id from a path segment.
+ *
+ * `Number('abc')` is NaN and `Number('')` is 0, either of which would reach the
+ * store as a lookup key. Returns null for anything that is not a positive
+ * integer so the caller can answer 404 instead.
+ *
+ * @param {string} segment
+ * @returns {number | null}
+ */
+function parseId(segment) {
+  if (!/^\d+$/.test(segment)) return null;
+  const id = Number.parseInt(segment, 10);
+  return id >= 1 ? id : null;
+}
+
 /** The current user. A real app would authenticate; this reads a header. */
 function currentUser(req) {
   const user = req.headers['x-user'];
@@ -41,7 +57,9 @@ function currentUser(req) {
 }
 
 export const app = createServer(async (req, res) => {
-  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+  // A fixed base, not `req.headers.host`: the header is attacker-controlled and
+  // nothing here needs the real hostname — only the path and the query.
+  const url = new URL(req.url ?? '/', 'http://localhost');
   const owner = currentUser(req);
 
   try {
@@ -57,15 +75,23 @@ export const app = createServer(async (req, res) => {
     }
 
     if (req.method === 'PATCH' && url.pathname.startsWith('/todos/')) {
-      const id = Number(url.pathname.slice('/todos/'.length));
+      const id = parseId(url.pathname.slice('/todos/'.length));
+      if (id === null) {
+        send(res, 404, { error: 'not found' });
+        return;
+      }
       const body = await readJson(req);
-      send(res, 200, setDone(id, body.done));
+      send(res, 200, setDone(id, body.done, owner));
       return;
     }
 
     if (req.method === 'DELETE' && url.pathname.startsWith('/todos/')) {
-      const id = Number(url.pathname.slice('/todos/'.length));
-      send(res, removeTodo(id) ? 204 : 404, {});
+      const id = parseId(url.pathname.slice('/todos/'.length));
+      if (id === null) {
+        send(res, 404, { error: 'not found' });
+        return;
+      }
+      send(res, removeTodo(id, owner) ? 204 : 404, {});
       return;
     }
 

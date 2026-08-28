@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { addTodo, listTodos, removeTodo, setDone } from './store.js';
+import { exportTodos, listExports } from './export.js';
 
 /**
  * Minimal HTTP layer over the todo store.
@@ -82,6 +83,22 @@ export const app = createServer(async (req, res) => {
       }
       const body = await readJson(req);
       send(res, 200, setDone(id, body.done, owner));
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname == '/export') {
+      exportTodos(owner, function (err, file) {
+        if (err) {
+          send(res, 500, { error: 'export failed' });
+          return;
+        }
+        send(res, 201, { file: file });
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname == '/export') {
+      send(res, 200, { files: listExports(owner) });
       return;
     }
 

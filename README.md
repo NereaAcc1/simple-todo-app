@@ -30,3 +30,12 @@ copy that code.
 | `DELETE` | `/todos/:id` | — | Removes one |
 
 The caller is identified by an `X-User` header, defaulting to `anonymous`.
+
+## ⚠️ Security notice for the `feature/sharing` branch
+
+`src/share.js` on that branch contains **deliberate, planted security
+defects** — injection, hardcoded credentials, weak cryptography, missing
+authorisation checks and more. They exist so the automated reviewer's findings
+can be checked against a known list rather than only read for plausibility.
+
+That branch is not merged and the code must not be reused.

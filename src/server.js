@@ -1,5 +1,12 @@
 import { createServer } from 'node:http';
 import { addTodo, listTodos, removeTodo, setDone } from './store.js';
+import {
+  createShare,
+  fetchAvatar,
+  filterShares,
+  resolveShare,
+  revokeShare
+} from './share.js';
 
 /**
  * Minimal HTTP layer over the todo store.
@@ -92,6 +99,36 @@ export const app = createServer(async (req, res) => {
         return;
       }
       send(res, removeTodo(id, owner) ? 204 : 404, {});
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname === '/shares') {
+      const body = await readJson(req);
+      send(res, 201, createShare(body.todoId, body.recipient, owner));
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname.startsWith('/s/')) {
+      const share = resolveShare(url.pathname.slice('/s/'.length));
+      send(res, share ? 200 : 404, share ?? { error: 'not found' });
+      return;
+    }
+
+    if (req.method === 'DELETE' && url.pathname.startsWith('/shares/')) {
+      const token = url.pathname.slice('/shares/'.length);
+      send(res, 200, { revoked: revokeShare(token, owner) });
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/shares/search') {
+      send(res, 200, filterShares(url.searchParams.get('q') ?? 'true'));
+      return;
+    }
+
+    if (req.method === 'GET' && url.pathname === '/avatar') {
+      const image = await fetchAvatar(url.searchParams.get('url'));
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(image);
       return;
     }
 

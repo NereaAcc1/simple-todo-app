@@ -27,6 +27,16 @@ describe('store', () => {
     it('defaults an absent owner to anonymous', () => {
       assert.equal(addTodo('orphan').owner, 'anonymous');
     });
+
+    it('stores a parsed due date', () => {
+      const todo = addTodo('renew passport', 'ana', '2026-06-01T00:00:00.000Z');
+      assert.equal(todo.dueDate.toISOString(), '2026-06-01T00:00:00.000Z');
+    });
+
+    it('stores null for an absent or unparseable due date', () => {
+      assert.equal(addTodo('undated', 'ana').dueDate, null);
+      assert.equal(addTodo('nonsense', 'ana', 'whenever').dueDate, null);
+    });
   });
 
   describe('listTodos', () => {

@@ -1,0 +1,15 @@
+{
+  "name": "simple-todo-app",
+  "version": "1.0.0",
+  "description": "A small dependency-free todo API, used as the review target for a multi-agent code review orchestrator",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

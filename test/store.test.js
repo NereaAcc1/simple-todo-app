@@ -49,24 +49,47 @@ describe('store', () => {
   describe('setDone', () => {
     it('flips the done flag', () => {
       const todo = addTodo('walk the dog', 'ana');
-      assert.equal(setDone(todo.id, true).done, true);
-      assert.equal(setDone(todo.id, false).done, false);
+      assert.equal(setDone(todo.id, true, 'ana').done, true);
+      assert.equal(setDone(todo.id, false, 'ana').done, false);
     });
 
     it('throws for an unknown id', () => {
-      assert.throws(() => setDone(9999, true), /no todo with id 9999/);
+      assert.throws(() => setDone(9999, true, 'ana'), /no todo with id 9999/);
+    });
+
+    it('refuses to touch a todo belonging to someone else', () => {
+      const todo = addTodo('bo’s errand', 'bo');
+      assert.throws(() => setDone(todo.id, true, 'ana'), /no todo with id/);
+      assert.equal(getTodo(todo.id).done, false);
+    });
+
+    it('does not reveal that someone else’s id exists', () => {
+      // Same message for "unknown" and "not yours": distinguishing them lets a
+      // caller enumerate other people's ids.
+      const todo = addTodo('bo’s errand', 'bo');
+      let notYours;
+      let unknown;
+      try { setDone(todo.id, true, 'ana'); } catch (e) { notYours = e.message; }
+      try { setDone(999999, true, 'ana'); } catch (e) { unknown = e.message; }
+      assert.equal(notYours.replace(/\d+/, 'N'), unknown.replace(/\d+/, 'N'));
     });
   });
 
   describe('removeTodo', () => {
     it('removes an existing todo and reports it', () => {
       const todo = addTodo('temporary', 'ana');
-      assert.equal(removeTodo(todo.id), true);
+      assert.equal(removeTodo(todo.id, 'ana'), true);
       assert.equal(getTodo(todo.id), undefined);
     });
 
     it('reports false for an id that was never there', () => {
-      assert.equal(removeTodo(4242), false);
+      assert.equal(removeTodo(4242, 'ana'), false);
+    });
+
+    it('refuses to delete a todo belonging to someone else', () => {
+      const todo = addTodo('bo’s errand', 'bo');
+      assert.equal(removeTodo(todo.id, 'ana'), false);
+      assert.equal(getTodo(todo.id).title, 'bo’s errand');
     });
   });
 });

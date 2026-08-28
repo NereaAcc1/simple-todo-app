@@ -67,28 +67,54 @@ export function listTodos(owner) {
 }
 
 /**
+ * Look up a todo the caller owns, or fail as though it did not exist.
+ *
+ * The error is identical whether the id is unknown or belongs to someone else.
+ * Distinguishing the two lets a caller enumerate other people's ids by watching
+ * which ones come back "forbidden" rather than "not found".
+ *
+ * @param {number} id
+ * @param {string} owner
+ * @returns {Todo}
+ */
+function requireOwned(id, owner) {
+  const todo = todos.get(id);
+  if (!todo || todo.owner !== owner) {
+    throw new Error(`no todo with id ${id}`);
+  }
+  return todo;
+}
+
+/**
  * Mark a todo done or not done.
+ *
+ * `owner` is required, and checked here rather than only in the HTTP layer: the
+ * store is the last place that can enforce it, and a second caller — a job, a
+ * CLI, a future route — would otherwise bypass the check entirely.
  *
  * @param {number} id
  * @param {boolean} done
+ * @param {string} owner
  * @returns {Todo}
  */
-export function setDone(id, done) {
-  const todo = todos.get(id);
-  if (!todo) {
-    throw new Error(`no todo with id ${id}`);
-  }
+export function setDone(id, done, owner) {
+  const todo = requireOwned(id, owner);
   todo.done = Boolean(done);
   return todo;
 }
 
 /**
- * Remove a todo.
+ * Remove a todo the caller owns.
  *
  * @param {number} id
+ * @param {string} owner
  * @returns {boolean} whether anything was removed
  */
-export function removeTodo(id) {
+export function removeTodo(id, owner) {
+  const todo = todos.get(id);
+  if (!todo || todo.owner !== owner) {
+    return false;
+  }
   return todos.delete(id);
 }
 

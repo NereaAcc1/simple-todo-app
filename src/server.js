@@ -52,7 +52,7 @@ export const app = createServer(async (req, res) => {
 
     if (req.method === 'POST' && url.pathname === '/todos') {
       const body = await readJson(req);
-      send(res, 201, addTodo(body.title, owner));
+      send(res, 201, addTodo(body.title, owner, body.dueDate));
       return;
     }
 

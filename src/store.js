@@ -1,3 +1,5 @@
+import { parseDueDate, sortByDue } from './due-dates.js';
+
 /**
  * In-memory todo store.
  *
@@ -17,6 +19,7 @@ const todos = new Map();
  * @property {boolean} done
  * @property {string} owner
  * @property {string} createdAt
+ * @property {Date | null} dueDate
  */
 
 /**
@@ -24,9 +27,11 @@ const todos = new Map();
  *
  * @param {string} title
  * @param {string} owner
+ * @param {unknown} [dueDate] ISO string or Date; anything unparseable is
+ *   treated as no due date, which is the behaviour parseDueDate documents.
  * @returns {Todo}
  */
-export function addTodo(title, owner) {
+export function addTodo(title, owner, dueDate) {
   const trimmed = String(title ?? '').trim();
   if (trimmed.length === 0) {
     throw new Error('title must not be empty');
@@ -40,7 +45,8 @@ export function addTodo(title, owner) {
     title: trimmed,
     done: false,
     owner: String(owner ?? 'anonymous'),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    dueDate: parseDueDate(dueDate)
   };
   todos.set(todo.id, todo);
   return todo;
@@ -57,13 +63,13 @@ export function getTodo(id) {
 }
 
 /**
- * Every todo belonging to an owner, oldest first.
+ * Every todo belonging to an owner, soonest due first.
  *
  * @param {string} owner
  * @returns {Todo[]}
  */
 export function listTodos(owner) {
-  return [...todos.values()].filter((todo) => todo.owner === owner);
+  return sortByDue([...todos.values()].filter((todo) => todo.owner === owner));
 }
 
 /**
